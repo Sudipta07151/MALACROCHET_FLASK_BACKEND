@@ -14,14 +14,15 @@ class Upload(Resource):
     def post(self):
         cloudinary.config(cloud_name = os.getenv('CLOUD_NAME'), api_key=os.getenv('API_KEY'), api_secret=os.getenv('API_SECRET'))
         file_to_upload = request.files['file']
-        name_of_file=request.form['name']
+        #name_of_file=request.form['name']
         tag_of_file=request.form['tag']
         #print(file_to_upload)
 
         if file_to_upload:
             upload_result = cloudinary.uploader.upload(file_to_upload)
             #print(upload_result)
-            self.db.items.insert_one({'name':name_of_file,'tag':tag_of_file,'image_url':upload_result['url']})
+            #self.db.items.insert_one({'name':name_of_file,'tag':tag_of_file,'image_url':upload_result['url']})
+            self.db.items.insert_one({'tag':tag_of_file,'image_url':upload_result['url']})
             return {'message': 'success'},200
         return {'message':'fail'}, 400
 
