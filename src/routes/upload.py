@@ -9,6 +9,7 @@ from cloudinary.utils import cloudinary_url
 import os
 from bson.json_util import dumps
 from bson.objectid import ObjectId
+from models.user import User
 
 class Upload(Resource):
     def __init__(self,**kwargs):
@@ -47,3 +48,21 @@ class GetSingleImage(Resource):
         print(json_data)
         return dumps(cursor)
 
+class SignUpUser(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.form['email']
+        name=request.form['name']
+        password=request.form['password']
+        isAdmin=request.form['isAdmin']
+        user=User(email=email,name=name,password=password,isAdmin=isAdmin)
+        user_obj=user.getUser()
+        if password=='' or name=='' or email=='':
+            return {'message': "fail"}
+        try:
+            self.db.users.insert_one(user_obj)
+        except:
+            return {'message': "fail"}
+        return {'message':'success'}
+        
