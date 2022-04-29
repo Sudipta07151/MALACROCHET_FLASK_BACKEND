@@ -12,6 +12,7 @@ cloudinary = "*"
 flask-pymongo = "*"
 pymongo = {extras = ["srv"], version = "*"}
 gunicorn = "*"
+pycryptodomex = "*"
 
 [dev-packages]
 

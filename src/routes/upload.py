@@ -1,5 +1,5 @@
-from email import message
 import json
+from pydoc import doc
 from flask_restful import Resource,request
 import cloudinary
 import cloudinary.uploader
@@ -10,6 +10,12 @@ import os
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from models.user import User
+
+
+import base64 
+from Cryptodome.Cipher import AES 
+from Cryptodome.Util.Padding import pad,unpad
+
 
 class Upload(Resource):
     def __init__(self,**kwargs):
@@ -59,10 +65,44 @@ class SignUpUser(Resource):
         user=User(email=email,name=name,password=password,isAdmin=isAdmin)
         user_obj=user.getUser()
         if password=='' or name=='' or email=='':
-            return {'message': "fail"}
+            return {'upload': False,"message_data":"some fields are empty"}
         try:
-            self.db.users.insert_one(user_obj)
+            document=self.db.users.find_one({"email":email})
+            print(document)
+            if document==None:
+                self.db.users.insert_one(user_obj)
+                return {'upload':True,"message_data":"successfully registered"}
+            else:
+                return {'upload': False, "message_data":"email already present"}    
         except:
-            return {'message': "fail"}
-        return {'message':'success'}
+            return {'upload': False,"message_data":"could not upload"}
+        
+class LoginUser(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.form['email']
+        password=request.form['password']
+        if password=='' or email=='':
+            return {'upload': False,"message_data":"some fields are empty"}
+        try:
+            document=self.db.users.find_one({"email":email})
+            #print('document found',document)
+
+            if document!=None:
+                #password decrypt
+                iv='BBBBBBBBBBBBBBBB'.encode('utf-8')
+                enc=base64.b64decode(document['password'])
+                cipher=AES.new('AAAAAAAAAAAAAAAA'.encode('utf-8'), AES.MODE_CBC, iv)
+                password_decrypted=unpad(cipher.decrypt(enc),16).decode("utf-8")
+                #print(document)
+                #print(password_decrypted.decode("utf-8"))
+
+                if password_decrypted==password:
+                    return {'login':True,"message_data":"successfully logged in"}
+                return {'upload': False, "message_data":"invalid credentials"}
+            else:
+                return {'upload': False, "message_data":"invalid credentials"}    
+        except:
+            return {'upload': False,"message_data":"could not login"}
         

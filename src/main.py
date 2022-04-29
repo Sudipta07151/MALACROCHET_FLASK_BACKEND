@@ -10,7 +10,7 @@ import sys
 sys.path.append('./routes')
 sys.path.append('./database')
 
-from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser
+from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser
 from database.mongoConnect import MongoConnect
 
 
@@ -34,6 +34,7 @@ api.add_resource(Upload, '/upload',resource_class_kwargs={'db': db})
 api.add_resource(GetAllData, '/',resource_class_kwargs={'db': db})
 api.add_resource(GetSingleImage, '/singlefile/<string:oid>',resource_class_kwargs={'db': db})
 api.add_resource(SignUpUser, '/signup',resource_class_kwargs={'db': db})
+api.add_resource(LoginUser, '/login',resource_class_kwargs={'db': db})
 
 if __name__ == '__main__':
     app.run(debug=True)
