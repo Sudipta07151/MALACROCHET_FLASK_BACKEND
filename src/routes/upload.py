@@ -84,7 +84,7 @@ class LoginUser(Resource):
         email=request.form['email']
         password=request.form['password']
         if password=='' or email=='':
-            return {'upload': False,"message_data":"some fields are empty"}
+            return {'login': False,"message_data":"some fields are empty"}
         try:
             document=self.db.users.find_one({"email":email})
             #print('document found',document)
@@ -100,9 +100,9 @@ class LoginUser(Resource):
 
                 if password_decrypted==password:
                     return {'login':True,"message_data":"successfully logged in"}
-                return {'upload': False, "message_data":"invalid credentials"}
+                return {'login': False, "message_data":"invalid credentials"}
             else:
-                return {'upload': False, "message_data":"invalid credentials"}    
+                return {'login': False, "message_data":"invalid credentials"}    
         except:
-            return {'upload': False,"message_data":"could not login"}
+            return {'login': False,"message_data":"could not login"}
         
