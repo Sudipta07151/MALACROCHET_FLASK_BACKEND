@@ -1,3 +1,5 @@
+from audioop import add
+from cmath import pi
 import json
 from pydoc import doc
 from flask_restful import Resource,request
@@ -10,7 +12,7 @@ import os
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from models.user import User
-
+from models.product import Product
 
 import base64 
 from Cryptodome.Cipher import AES 
@@ -95,14 +97,42 @@ class LoginUser(Resource):
                 enc=base64.b64decode(document['password'])
                 cipher=AES.new('AAAAAAAAAAAAAAAA'.encode('utf-8'), AES.MODE_CBC, iv)
                 password_decrypted=unpad(cipher.decrypt(enc),16).decode("utf-8")
-                #print(document)
+                # print(document)
                 #print(password_decrypted.decode("utf-8"))
 
                 if password_decrypted==password:
-                    return {'login':True,"message_data":"successfully logged in"}
+                    return {'login':True,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
                 return {'login': False, "message_data":"invalid credentials"}
             else:
                 return {'login': False, "message_data":"invalid credentials"}    
         except:
             return {'login': False,"message_data":"could not login"}
+        
+class PlaceOrder(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        fname=request.form['fname']
+        lname=request.form['lname']
+        address=request.form['address']
+        city=request.form['city']
+        landmark=request.form['landmark']
+        state=request.form['state']
+        pin=request.form['pin']
+        phone=request.form['phone']
+        products=request.form['products']
+        userId=request.form["userid"]
+        print('userid:',ObjectId(userId))
+
+        document=self.db.users.find_one({"_id":ObjectId(userId)})
+        print('user doc',document)
+        product=Product(fname=fname,lname=lname,address=address,pin=pin,products=products,phone=phone,landmark=landmark,state=state,city=city,userId=userId)
+        product_obj=product.getProduct()
+        if fname=='' or lname=='' or address=='' or city=='' or landmark=='' or state=='' or pin=='' or phone=='' or products=='':
+            return {'upload': False,"message_data":"some fields are empty"}
+        try:
+            self.db.products.insert_one(product_obj)
+            return {'upload':True,"message_data":"successfully ordered"}
+        except:
+            return {'upload': False,"message_data":"could not place order"}
         
