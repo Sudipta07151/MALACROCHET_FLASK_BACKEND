@@ -10,15 +10,14 @@ import sys
 sys.path.append('./routes')
 sys.path.append('./database')
 
-from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder
-from database.mongoConnect import MongoConnect
-
 
 env=load_dotenv()
 app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
+from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder
+from database.mongoConnect import MongoConnect
 
 try:
     mongo=MongoConnect(app=app).mongo

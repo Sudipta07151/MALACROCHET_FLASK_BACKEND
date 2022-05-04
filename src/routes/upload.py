@@ -14,9 +14,16 @@ from bson.objectid import ObjectId
 from models.user import User
 from models.product import Product
 
+import sys
+sys.path.append('../../twilioservice')
+from twilioservice.TwilioMsgService import send_sms
+
+
 import base64 
 from Cryptodome.Cipher import AES 
 from Cryptodome.Util.Padding import pad,unpad
+from pymongo import ReturnDocument
+
 
 
 class Upload(Resource):
@@ -123,16 +130,20 @@ class PlaceOrder(Resource):
         products=request.form['products']
         userId=request.form["userid"]
         print('userid:',ObjectId(userId))
-
-        document=self.db.users.find_one({"_id":ObjectId(userId)})
-        print('user doc',document)
-        product=Product(fname=fname,lname=lname,address=address,pin=pin,products=products,phone=phone,landmark=landmark,state=state,city=city,userId=userId)
-        product_obj=product.getProduct()
-        if fname=='' or lname=='' or address=='' or city=='' or landmark=='' or state=='' or pin=='' or phone=='' or products=='':
-            return {'upload': False,"message_data":"some fields are empty"}
         try:
-            self.db.products.insert_one(product_obj)
-            return {'upload':True,"message_data":"successfully ordered"}
+            document=self.db.users.find_one_and_update({"_id":ObjectId(userId)},{'$push':{'orders':dumps(products)}},return_document=ReturnDocument.AFTER)
+            print('user doc',document)
+            if fname=='' or lname=='' or address=='' or city=='' or landmark=='' or state=='' or pin=='' or phone=='' or products=='':
+                return {'upload': False,"message_data":"some fields are empty"}
+            try:
+                product=Product(fname=fname,lname=lname,address=address,pin=pin,products=products,phone=phone,landmark=landmark,state=state,city=city,userId=userId)
+                product_obj=product.getProduct()
+                placed_order=self.db.products.insert_one(product_obj)
+                print('placed_order:',placed_order.inserted_id)
+                self.db.users.find_one_and_update({"_id":ObjectId(userId)},{'$push':{'orderslist':placed_order.inserted_id}},return_document=ReturnDocument.AFTER)
+                send_sms(body=f"AN ORDER HAS BEEN PLACED BY {fname+lname} PHONE: {phone} ADDRESS: {address} PIN: {pin} ORDERID: {placed_order.inserted_id}")
+                return {'upload':True,"message_data":"successfully ordered","orderid":dumps(placed_order.inserted_id)}
+            except:
+                return {'upload': False,"message_data":"could not place order"}
         except:
-            return {'upload': False,"message_data":"could not place order"}
-        
+            return {'upload': False,"message_data":"must be logged in to place order"}
