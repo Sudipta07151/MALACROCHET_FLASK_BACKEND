@@ -2,6 +2,7 @@ from audioop import add
 from cmath import pi
 import json
 from pydoc import doc
+import string
 from flask_restful import Resource,request
 import cloudinary
 import cloudinary.uploader
@@ -13,6 +14,8 @@ from bson.json_util import dumps
 from bson.objectid import ObjectId
 from models.user import User
 from models.product import Product
+
+
 
 import sys
 sys.path.append('../../twilioservice')
@@ -145,5 +148,18 @@ class PlaceOrder(Resource):
                 return {'upload':True,"message_data":"successfully ordered","orderid":dumps(placed_order.inserted_id)}
             except:
                 return {'upload': False,"message_data":"could not place order"}
+        except:
+            return {'upload': False,"message_data":"must be logged in to place order"}
+
+class YourOrders(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        try:
+            id=request.json['userID']
+            print(id)
+            document=self.db.users.find_one({"_id":ObjectId(id)},{"orders":1})
+            print(document)
+            return {'found': False,"message_data":"orders found","orders":dumps(document)}
         except:
             return {'upload': False,"message_data":"must be logged in to place order"}

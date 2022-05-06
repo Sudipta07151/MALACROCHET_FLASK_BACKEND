@@ -16,7 +16,7 @@ app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
-from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder
+from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder,YourOrders
 from database.mongoConnect import MongoConnect
 
 try:
@@ -35,6 +35,7 @@ api.add_resource(GetSingleImage, '/singlefile/<string:oid>',resource_class_kwarg
 api.add_resource(SignUpUser, '/signup',resource_class_kwargs={'db': db})
 api.add_resource(LoginUser, '/login',resource_class_kwargs={'db': db})
 api.add_resource(PlaceOrder, '/placeorder',resource_class_kwargs={'db': db})
+api.add_resource(YourOrders, '/yourorder',resource_class_kwargs={'db': db})
 
 if __name__ == '__main__':
     app.run(debug=True)
