@@ -27,11 +27,17 @@ from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad,unpad
 from pymongo import ReturnDocument
 
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+
+
 
 
 class Upload(Resource):
     def __init__(self,**kwargs):
         self.db=kwargs['db']
+    @jwt_required()
     def post(self):
         cloudinary.config(cloud_name = os.getenv('CLOUD_NAME'), api_key=os.getenv('API_KEY'), api_secret=os.getenv('API_SECRET'))
         file_to_upload = request.files['file']
@@ -88,7 +94,36 @@ class SignUpUser(Resource):
                 return {'upload': False, "message_data":"email already present"}    
         except:
             return {'upload': False,"message_data":"could not upload"}
-        
+
+class SignUpAdmin(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.form['email']
+        password=request.form['password']
+        adminKey=request.form['adminKey']
+        user=User(email=email,name="Admin User",password=password,isAdmin=True)
+        user_obj=user.getUser()
+        print('SignUpAdmin HIT',password,email,adminKey)
+        if email=='' or password=='' or adminKey=='':
+            return {'signup': False,"message_data":"some fields are empty"}
+        if adminKey!=os.getenv("ADMIN_KEY"):
+            return {'signup':False,"message_data":"could not sign up, invalid key"}
+        try:
+            document=self.db.users.find_one({"email":email})
+            print(document)
+            if document==None:
+                self.db.users.insert_one(user_obj)
+                access_token = create_access_token(identity={"email":email})
+                return {'signup':True,"message_data":"successfully registered admin user","access_token":access_token}
+            else:
+                return {'signup': False, "message_data":"email already present"}    
+        except:
+            return {'upload': False,"message_data":"could not upload"}
+
+
+
+
 class LoginUser(Resource):
     def __init__(self,**kwargs):
         self.db=kwargs['db']
@@ -111,13 +146,51 @@ class LoginUser(Resource):
                 #print(password_decrypted.decode("utf-8"))
 
                 if password_decrypted==password:
-                    return {'login':True,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
+                    return {'login':True,"message_data":"successfully logged in","access_token":access_token,"login_data":dumps({"id":document['_id'],"name":document["name"]})}
                 return {'login': False, "message_data":"invalid credentials"}
             else:
                 return {'login': False, "message_data":"invalid credentials"}    
         except:
             return {'login': False,"message_data":"could not login"}
-        
+
+class LoginAdminUser(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.form['email']
+        password=request.form['password']
+        adminKey=request.form['adminKey']
+        if password=='' or email=='':
+            return {'login': False,"message_data":"some fields are empty"}
+        if adminKey!=os.getenv("ADMIN_KEY"):
+            return {'login': False,"message_data":"invalid admin key"}
+        try:
+            document=self.db.users.find_one({"email":email,"isAdmin":True})
+            #print('document found',document)
+
+            if document!=None:
+                #password decrypt
+                iv='BBBBBBBBBBBBBBBB'.encode('utf-8')
+                enc=base64.b64decode(document['password'])
+                cipher=AES.new('AAAAAAAAAAAAAAAA'.encode('utf-8'), AES.MODE_CBC, iv)
+                password_decrypted=unpad(cipher.decrypt(enc),16).decode("utf-8")
+                # print(document)
+                #print(password_decrypted.decode("utf-8"))
+
+                if password_decrypted==password:
+                    access_token = create_access_token(identity={"email":email})
+                    return {'login':True,"access_token":access_token,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
+
+                return {'login': False, "message_data":"invalid credentials"}
+            else:
+                return {'login': False, "message_data":"invalid credentials"}    
+        except:
+            return {'login': False,"message_data":"could not login"}
+
+
+
+
+
 class PlaceOrder(Resource):
     def __init__(self,**kwargs):
         self.db=kwargs['db']
