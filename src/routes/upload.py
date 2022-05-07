@@ -132,7 +132,7 @@ class PlaceOrder(Resource):
         phone=request.form['phone']
         products=request.form['products']
         userId=request.form["userid"]
-        print('userid:',ObjectId(userId))
+        #print('userid:',ObjectId(userId))
         try:
             document=self.db.users.find_one_and_update({"_id":ObjectId(userId)},{'$push':{'orders':dumps(products)}},return_document=ReturnDocument.AFTER)
             print('user doc',document)
