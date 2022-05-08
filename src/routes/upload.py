@@ -146,7 +146,7 @@ class LoginUser(Resource):
                 #print(password_decrypted.decode("utf-8"))
 
                 if password_decrypted==password:
-                    return {'login':True,"message_data":"successfully logged in","access_token":access_token,"login_data":dumps({"id":document['_id'],"name":document["name"]})}
+                    return {'login':True,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
                 return {'login': False, "message_data":"invalid credentials"}
             else:
                 return {'login': False, "message_data":"invalid credentials"}    
