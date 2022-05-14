@@ -4,7 +4,6 @@ import json
 from pydoc import doc
 import string
 
-from pyparsing import Opt
 from flask_restful import Resource,request
 import cloudinary
 import cloudinary.uploader
