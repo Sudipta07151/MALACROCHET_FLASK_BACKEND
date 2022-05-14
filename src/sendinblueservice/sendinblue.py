@@ -25,7 +25,7 @@ class sendinblue:
         subject = "My Subject"
         html_content = f"<html><body><h1>{data}</h1></body></html>"
         sender = {"name":"MALACROCHET","email":"adakchandramala@gmail.com"}
-        to = [{"email":email}]
+        to = [{"email":email,"name":"User"}]
         headers = {"Some-Custom-Name":"unique-id-1234"}
         params = {"parameter":"My param value","subject":"New Subject"}
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(to=to, headers=headers, html_content=html_content, sender=sender, subject=subject)        
