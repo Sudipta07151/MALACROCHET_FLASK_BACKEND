@@ -3,6 +3,8 @@ from cmath import pi
 import json
 from pydoc import doc
 import string
+
+from pyparsing import Opt
 from flask_restful import Resource,request
 import cloudinary
 import cloudinary.uploader
@@ -20,7 +22,10 @@ from models.product import Product
 import sys
 sys.path.append('../../twilioservice')
 from twilioservice.TwilioMsgService import send_sms
-
+sys.path.append('../../sendinblueservice')
+from sendinblueservice.sendinblue import sendinblue
+sys.path.append('../../otpservice')
+from otpservice.otp import Otp
 
 import base64 
 from Cryptodome.Cipher import AES 
@@ -218,6 +223,10 @@ class PlaceOrder(Resource):
                 print('placed_order:',placed_order.inserted_id)
                 self.db.users.find_one_and_update({"_id":ObjectId(userId)},{'$push':{'orderslist':placed_order.inserted_id}},return_document=ReturnDocument.AFTER)
                 send_sms(body=f"AN ORDER HAS BEEN PLACED BY {fname+lname} PHONE: {phone} ADDRESS: {address} PIN: {pin} ORDERID: {placed_order.inserted_id}")
+                sendinblue_obj=sendinblue()
+                send_data=f"ORDER PLACED SUCCESSFULLY , WE WILL DISPATCH ORDER SOON . ORDER ID {placed_order.inserted_id}"
+                sendinblue_obj.run_service(document['email'],send_data)
+                sendinblue_obj.create_contact()
                 return {'upload':True,"message_data":"successfully ordered","orderid":dumps(placed_order.inserted_id)}
             except:
                 return {'upload': False,"message_data":"could not place order"}
@@ -236,3 +245,20 @@ class YourOrders(Resource):
             return {'found': False,"message_data":"orders found","orders":dumps(document)}
         except:
             return {'upload': False,"message_data":"must be logged in to place order"}
+
+
+class OtpVerification(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        try:
+            email=request.json['email']
+            otp_obj=Otp()
+            otp_number=otp_obj.generateOTP()
+            sendinblue_obj=sendinblue()
+            send_data=f"OTP VERIFY NUMBER: {otp_number}"
+            sendinblue_obj.run_service(email,send_data)
+            print(otp_number)
+            return {'Otp': True,"message_data":"Otp Generated","orders":dumps(otp_number)}
+        except:
+            return {'Otp': False,"message_data":"Otp Generation Failed"}
