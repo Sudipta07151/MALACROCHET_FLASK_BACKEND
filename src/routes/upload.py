@@ -150,7 +150,7 @@ class LoginUser(Resource):
                 #print(password_decrypted.decode("utf-8"))
 
                 if password_decrypted==password:
-                    return {'login':True,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
+                    return {'login':True,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"],"email":document["email"]})}
                 return {'login': False, "message_data":"invalid credentials"}
             else:
                 return {'login': False, "message_data":"invalid credentials"}    
@@ -261,3 +261,34 @@ class OtpVerification(Resource):
             return {'Otp': True,"message_data":"Otp Generated","orders":dumps(otp_number)}
         except:
             return {'Otp': False,"message_data":"Otp Generation Failed"}
+
+
+class EnterComment(Resource): 
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']           
+    def post(self,oid):
+        print(ObjectId(oid))
+        comment=request.form['comment']
+        userID=request.form['userID']
+        commentId=self.db.comments.insert_one({'comment':comment,'user':userID})
+        cursor=self.db.items.find_one_and_update({"_id": ObjectId(oid)},{'$push':{'comments':dumps(commentId.inserted_id)}},return_document=ReturnDocument.AFTER)
+        print(cursor)
+        json_data=dumps(list(cursor))
+        print(json_data)
+        return dumps(cursor)
+    
+    def get(self,oid):
+        print(ObjectId(oid))
+        try:
+            cursor=self.db.items.find({"_id": ObjectId(oid)},{"comments":1,"_id":0})
+            json_data=dumps(list(cursor))
+            comment_list=[]
+            print('data got:',json.loads(json_data)[0]['comments'])
+            for comment in json.loads(json_data)[0]['comments']:
+                print('comment id',json.loads(comment)['$oid'])
+                comment_data=self.db.comments.find({"_id": ObjectId(json.loads(comment)['$oid'])})
+                print('got comment data:',comment_data)
+                comment_list.append(dumps(comment_data))
+            return {"message":"success getting comments","comments":dumps(comment_list)}
+        except:
+            return {"message":'couldnt fetch comments',"comments":dumps([])}
