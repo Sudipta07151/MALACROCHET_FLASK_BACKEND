@@ -245,6 +245,33 @@ class YourOrders(Resource):
         except:
             return {'upload': False,"message_data":"must be logged in to place order"}
 
+class AllOrders(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def get(self):
+        try:
+            cursor=self.db.products.find()
+            allorders=list(cursor)
+            allOrdersData={}
+            for order in allorders:
+                orders=order['order']
+                # print(str(order['_id']))
+                items=json.loads(json.loads(orders['products']))
+                details=order['details']
+                productsOrdered=[]
+                for item in items:
+                    if item['_id']:
+                        # print(item['_id']['$oid'])
+                        productsOrdered.append(item['_id']['$oid'])
+                        #print(productsOrdered,details)
+                allOrdersData[str(order['_id'])]={'details':details,'products':productsOrdered}
+            #print(allOrdersData)
+            #print(type(allOrdersData))
+            return {'found': True,"message_data":"orders found","orders":dumps(allOrdersData)}
+        except:
+            return {'found': False,"message_data":"must be logged in to find all order"}
+
+
 
 class OtpVerification(Resource):
     def __init__(self,**kwargs):

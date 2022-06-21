@@ -16,5 +16,5 @@ class Product:
         self.userId=userId
         print('Product',json.loads(products))
     def getProduct(self):
-        product_obj = {"details":{"fname":self.fname,"fname":self.lname,"address":self.address,"pin":self.pin,"landmark":self.landmark,"state":self.state,"phone":self.phone,"city":self.city},"order":{"products":dumps(self.produts)},"userid":self.userId}
+        product_obj = {"details":{"fname":self.fname,"lname":self.lname,"address":self.address,"pin":self.pin,"landmark":self.landmark,"state":self.state,"phone":self.phone,"city":self.city},"order":{"products":dumps(self.produts)},"userid":self.userId}
         return product_obj
