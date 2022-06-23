@@ -248,9 +248,14 @@ class YourOrders(Resource):
 class AllOrders(Resource):
     def __init__(self,**kwargs):
         self.db=kwargs['db']
-    def get(self):
+    def post(self):
         try:
-            cursor=self.db.products.find()
+            startPage=request.json['startPage']
+            endPage=request.json['endPage']
+            pageLimit=request.json['pageLimit']
+            print(startPage,endPage,pageLimit)
+            print(type(startPage))
+            cursor=self.db.products.find().skip(startPage).limit(pageLimit)
             allorders=list(cursor)
             allOrdersData={}
             for order in allorders:
