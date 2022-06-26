@@ -256,6 +256,8 @@ class AllOrders(Resource):
             print(startPage,endPage,pageLimit)
             print(type(startPage))
             cursor=self.db.products.find().skip(startPage).limit(pageLimit)
+            ttlcnt=self.db.products.count_documents({})
+            # print('ttllcnt',ttlcnt)
             allorders=list(cursor)
             allOrdersData={}
             for order in allorders:
@@ -267,12 +269,13 @@ class AllOrders(Resource):
                 for item in items:
                     if item['_id']:
                         # print(item['_id']['$oid'])
-                        productsOrdered.append(item['_id']['$oid'])
+                        # productsOrdered.append(item['_id']['$oid'])
+                        productsOrdered.append(item)
                         #print(productsOrdered,details)
                 allOrdersData[str(order['_id'])]={'details':details,'products':productsOrdered}
             #print(allOrdersData)
             #print(type(allOrdersData))
-            return {'found': True,"message_data":"orders found","orders":dumps(allOrdersData)}
+            return {'found': True,"message_data":"orders found","orders":dumps(allOrdersData),"ttlcnt":ttlcnt}
         except:
             return {'found': False,"message_data":"must be logged in to find all order"}
 
