@@ -125,7 +125,31 @@ class SignUpAdmin(Resource):
         except:
             return {'upload': False,"message_data":"could not upload"}
 
-
+class SignUpAdminAngular(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.json['email']
+        password=request.json['password']
+        adminKey=request.json['adminKey']
+        user=User(email=email,name="Admin User",password=password,isAdmin=True)
+        user_obj=user.getUser()
+        print('SignUpAdmin HIT',password,email,adminKey)
+        if email=='' or password=='' or adminKey=='':
+            return {'signup': False,"message_data":"some fields are empty"}
+        if adminKey!=os.getenv("ADMIN_KEY"):
+            return {'signup':False,"message_data":"could not sign up, invalid key"}
+        try:
+            document=self.db.users.find_one({"email":email})
+            print(document)
+            if document==None:
+                self.db.users.insert_one(user_obj)
+                access_token = create_access_token(identity={"email":email})
+                return {'signup':True,"message_data":"successfully registered admin user","access_token":access_token}
+            else:
+                return {'signup': False, "message_data":"email already present"}    
+        except:
+            return {'upload': False,"message_data":"could not upload"}
 
 
 class LoginUser(Resource):
@@ -190,6 +214,41 @@ class LoginAdminUser(Resource):
                 return {'login': False, "message_data":"invalid credentials"}    
         except:
             return {'login': False,"message_data":"could not login"}
+
+class LoginAdminUserAngular(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def post(self):
+        email=request.json['email']
+        password=request.json['password']
+        adminKey=request.json['adminKey']
+        if password=='' or email=='':
+            return {'login': False,"message_data":"some fields are empty"}
+        if adminKey!=os.getenv("ADMIN_KEY"):
+            return {'login': False,"message_data":"invalid admin key"}
+        try:
+            document=self.db.users.find_one({"email":email,"isAdmin":True})
+            print('document found',document)
+
+            if document!=None:
+                #password decrypt
+                iv='BBBBBBBBBBBBBBBB'.encode('utf-8')
+                enc=base64.b64decode(document['password'])
+                cipher=AES.new('AAAAAAAAAAAAAAAA'.encode('utf-8'), AES.MODE_CBC, iv)
+                password_decrypted=unpad(cipher.decrypt(enc),16).decode("utf-8")
+                # print(document)
+                #print(password_decrypted.decode("utf-8"))
+
+                if password_decrypted==password:
+                    access_token = create_access_token(identity={"email":email})
+                    return {'login':True,"access_token":access_token,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
+
+                return {'login': False, "message_data":"invalid credentials"}
+            else:
+                return {'login': False, "message_data":"invalid credentials"}    
+        except:
+            return {'login': False,"message_data":"could not login"}
+
 
 
 
@@ -327,3 +386,21 @@ class EnterComment(Resource):
             return {"message":"success getting comments","comments":dumps(comment_list)}
         except:
             return {"message":'couldnt fetch comments',"comments":dumps([])}
+
+class EncryptPassword(Resource): 
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']           
+    def post(self):
+        try:
+            password=request.json['password']
+            print(password)
+            key = 'AAAAAAAAAAAAAAAA'
+            iv =  'BBBBBBBBBBBBBBBB'.encode('utf-8')
+            data= pad(password.encode(),16)
+            cipher = AES.new(key.encode('utf-8'),AES.MODE_CBC,iv)
+            encrypted=base64.b64encode(cipher.encrypt(data))
+            print(str(encrypted))
+            return {"message":'encytion successful',"encrytion":"true","password_enc":dumps(str(encrypted))}
+        except:
+            return {"message":'couldnt encrypt',"encrytion":'false'}
+
