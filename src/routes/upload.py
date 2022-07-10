@@ -3,6 +3,7 @@ from cmath import pi
 import json
 from pydoc import doc
 import string
+from urllib import response
 
 from flask_restful import Resource,request
 import cloudinary
@@ -15,6 +16,7 @@ from bson.json_util import dumps
 from bson.objectid import ObjectId
 from models.user import User
 from models.product import Product
+from models.uploaditem import UploadItem
 
 
 
@@ -56,6 +58,33 @@ class Upload(Resource):
             self.db.items.insert_one({'tag':tag_of_file,'image_url':upload_result['url']})
             return {'message': 'success','data':upload_result['url']},200
         return {'message':'fail'}, 400
+
+class UploadAngular(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+   
+    def post(self):
+        cloudinary.config(cloud_name = os.getenv('CLOUD_NAME'), api_key=os.getenv('API_KEY'), api_secret=os.getenv('API_SECRET'))
+        try:
+            file_to_upload = request.files['file']
+            tag_of_file=request.form['category']
+            name_of_file=request.form['name']
+            price=request.form['price']
+            #return {'message':'SUCCESS'},200
+
+            if file_to_upload:
+                upload_result = cloudinary.uploader.upload(file_to_upload)
+                upload_item=UploadItem(picture=upload_result['url'],category=tag_of_file,name=name_of_file,price=price)
+                upload_obj=upload_item.getUploadItem()
+                #print(upload_result)
+                # self.db.items.insert_one({'name':name_of_file,'tag':tag_of_file,'price':price,'image_url':upload_result['url']})
+                print(upload_obj)
+                self.db.items.insert_one(upload_obj)
+                return {'message': 'success','data':upload_result['url']},200
+        except:
+            return {'message':'fail'}, 400
+
+
 
 class GetAllData(Resource): 
     def __init__(self,**kwargs):
@@ -225,7 +254,7 @@ class LoginAdminUserAngular(Resource):
         if password=='' or email=='':
             return {'login': False,"message_data":"some fields are empty"}
         if adminKey!=os.getenv("ADMIN_KEY"):
-            return {'login': False,"message_data":"invalid admin key"}
+            return {'login': False,"message_data":"invalid admin key"},500
         try:
             document=self.db.users.find_one({"email":email,"isAdmin":True})
             print('document found',document)
@@ -331,12 +360,33 @@ class AllOrders(Resource):
                         # productsOrdered.append(item['_id']['$oid'])
                         productsOrdered.append(item)
                         #print(productsOrdered,details)
-                allOrdersData[str(order['_id'])]={'details':details,'products':productsOrdered}
+                allOrdersData[str(order['_id'])]={'oid':str(order['_id']),'details':details,'products':productsOrdered}
             #print(allOrdersData)
             #print(type(allOrdersData))
             return {'found': True,"message_data":"orders found","orders":dumps(allOrdersData),"ttlcnt":ttlcnt}
         except:
             return {'found': False,"message_data":"must be logged in to find all order"}
+
+class ApproveOrder(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def put(self):
+        try:
+            oid=request.json['oid']
+            self.db.products.find_one_and_update({"_id": ObjectId(oid)},{ '$set': { "approved" : True} })
+            return {'message':'Status approved sucessfully'},200 
+        except:
+            {'message':'Fail to approve status'},500
+
+class DispatchedOrders(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def get(self):
+        try:
+            cursor=self.db.products.find({ "approved" : True})
+            return {'message':'Got data sucessfully','data':dumps(list(cursor))},200 
+        except:
+            {'message':'Fail to get data'},500
 
 
 
