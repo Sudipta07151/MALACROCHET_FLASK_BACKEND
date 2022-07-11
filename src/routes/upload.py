@@ -85,7 +85,6 @@ class UploadAngular(Resource):
             return {'message':'fail'}, 400
 
 
-
 class GetAllData(Resource): 
     def __init__(self,**kwargs):
         self.db=kwargs['db']           
@@ -252,9 +251,9 @@ class LoginAdminUserAngular(Resource):
         password=request.json['password']
         adminKey=request.json['adminKey']
         if password=='' or email=='':
-            return {'login': False,"message_data":"some fields are empty"}
+            return {'login': False,"message_data":"some fields are empty"},401
         if adminKey!=os.getenv("ADMIN_KEY"):
-            return {'login': False,"message_data":"invalid admin key"},500
+            return {'login': False,"message_data":"invalid admin key"},401
         try:
             document=self.db.users.find_one({"email":email,"isAdmin":True})
             print('document found',document)
@@ -270,17 +269,13 @@ class LoginAdminUserAngular(Resource):
 
                 if password_decrypted==password:
                     access_token = create_access_token(identity={"email":email})
-                    return {'login':True,"access_token":access_token,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})}
+                    return {'login':True,"access_token":access_token,"message_data":"successfully logged in","login_data":dumps({"id":document['_id'],"name":document["name"]})},200
 
-                return {'login': False, "message_data":"invalid credentials"}
+                return {'login': False, "message_data":"invalid credentials"},401
             else:
-                return {'login': False, "message_data":"invalid credentials"}    
+                return {'login': False, "message_data":"invalid credentials"},401    
         except:
-            return {'login': False,"message_data":"could not login"}
-
-
-
-
+            return {'login': False,"message_data":"could not login"},401
 
 
 class PlaceOrder(Resource):
@@ -343,8 +338,8 @@ class AllOrders(Resource):
             pageLimit=request.json['pageLimit']
             print(startPage,endPage,pageLimit)
             print(type(startPage))
-            cursor=self.db.products.find().skip(startPage).limit(pageLimit)
-            ttlcnt=self.db.products.count_documents({})
+            cursor=self.db.products.find({"$or":[{ "approved" : False },{ "approved" : {'$exists':False}}]}).skip(startPage).limit(pageLimit)
+            ttlcnt=self.db.products.count_documents({"$or":[{ "approved" : False },{ "approved" : {'$exists':False}}]})
             # print('ttllcnt',ttlcnt)
             allorders=list(cursor)
             allOrdersData={}
@@ -384,7 +379,35 @@ class DispatchedOrders(Resource):
     def get(self):
         try:
             cursor=self.db.products.find({ "approved" : True})
-            return {'message':'Got data sucessfully','data':dumps(list(cursor))},200 
+            allorders=list(cursor)
+            allOrdersData={}
+            for order in allorders:
+                orders=order['order']
+                # print(str(order['_id']))
+                items=json.loads(json.loads(orders['products']))
+                details=order['details']
+                productsOrdered=[]
+                for item in items:
+                    if item['_id']:
+                        # print(item['_id']['$oid'])
+                        # productsOrdered.append(item['_id']['$oid'])
+                        productsOrdered.append(item)
+                        #print(productsOrdered,details)
+                allOrdersData[str(order['_id'])]={'oid':str(order['_id']),'details':details,'products':productsOrdered}
+            return {'found': True,"message_data":"orders found","orders":dumps(allOrdersData)},200
+        except:
+            {'message':'Fail to get data'},500
+
+class GetOrdersCount(Resource):
+    def __init__(self,**kwargs):
+        self.db=kwargs['db']
+    def get(self):
+        try:
+            ttlcntNotApproved=self.db.products.count_documents({"$or":[{ "approved" : False },{ "approved" : {'$exists':False}}]})
+            ttlcntApproved=self.db.products.count_documents({ "approved" : True })
+            ttlcntAll=self.db.products.count_documents({})
+            print(ttlcntNotApproved,ttlcntAll)
+            return {'found': True,"message_data":"found","ttlcntNotApproved":dumps(ttlcntNotApproved),"ttlcntAll":dumps(ttlcntAll),"ttlcntApproved":dumps(ttlcntApproved)},200
         except:
             {'message':'Fail to get data'},500
 

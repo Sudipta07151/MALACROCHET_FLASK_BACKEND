@@ -19,7 +19,7 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY')
 jwt = JWTManager(app)
 
-from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder,YourOrders,SignUpAdmin,LoginAdminUser,OtpVerification,EnterComment,AllOrders,LoginAdminUserAngular,SignUpAdminAngular,EncryptPassword,UploadAngular,ApproveOrder,DispatchedOrders
+from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder,YourOrders,SignUpAdmin,LoginAdminUser,OtpVerification,EnterComment,AllOrders,LoginAdminUserAngular,SignUpAdminAngular,EncryptPassword,UploadAngular,ApproveOrder,DispatchedOrders,GetOrdersCount
 from database.mongoConnect import MongoConnect
 
 try:
@@ -43,6 +43,7 @@ api.add_resource(YourOrders, '/yourorder',resource_class_kwargs={'db': db})
 api.add_resource(AllOrders, '/allorders',resource_class_kwargs={'db': db})
 api.add_resource(ApproveOrder, '/approveorderstatus',resource_class_kwargs={'db': db})
 api.add_resource(DispatchedOrders, '/dispatchedorders',resource_class_kwargs={'db': db})
+api.add_resource(GetOrdersCount, '/getorderscount',resource_class_kwargs={'db': db})
 api.add_resource(SignUpAdmin, '/signupadmin',resource_class_kwargs={'db': db})
 api.add_resource(SignUpAdminAngular, '/signupadminangular',resource_class_kwargs={'db': db})
 api.add_resource(LoginAdminUser, '/loginadmin',resource_class_kwargs={'db': db})
