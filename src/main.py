@@ -14,48 +14,24 @@ sys.path.append('./database')
 
 env=load_dotenv()
 app = Flask(__name__)
-api = Api(app)
+# api = Api(app)
 CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY')
 jwt = JWTManager(app)
 
-from routes.upload import Upload,GetAllData,GetSingleImage,SignUpUser,LoginUser,PlaceOrder,YourOrders,SignUpAdmin,LoginAdminUser,OtpVerification,EnterComment,AllOrders,LoginAdminUserAngular,SignUpAdminAngular,EncryptPassword,UploadAngular,ApproveOrder,DispatchedOrders,GetOrdersCount
 from database.mongoConnect import MongoConnect
 
 try:
-    mongo=MongoConnect(app=app).mongo
-    db=mongo.db
-    print('CONNECTION SUCCESSFUL')
-except:
-    print('CONNECTION FAILED!')
+    db=MongoConnect(app=app)
+except Exception:
+    print(Exception)
+
 
 config = dotenv_values(".env") 
 #print(config)
 
-api.add_resource(Upload, '/upload',resource_class_kwargs={'db': db})
-api.add_resource(UploadAngular, '/uploadfile',resource_class_kwargs={'db': db})
-api.add_resource(GetAllData, '/',resource_class_kwargs={'db': db})
-api.add_resource(GetSingleImage, '/singlefile/<string:oid>',resource_class_kwargs={'db': db})
-api.add_resource(SignUpUser, '/signup',resource_class_kwargs={'db': db})
-api.add_resource(LoginUser, '/login',resource_class_kwargs={'db': db})
-api.add_resource(PlaceOrder, '/placeorder',resource_class_kwargs={'db': db})
-api.add_resource(YourOrders, '/yourorder',resource_class_kwargs={'db': db})
-api.add_resource(AllOrders, '/allorders',resource_class_kwargs={'db': db})
-api.add_resource(ApproveOrder, '/approveorderstatus',resource_class_kwargs={'db': db})
-api.add_resource(DispatchedOrders, '/dispatchedorders',resource_class_kwargs={'db': db})
-api.add_resource(GetOrdersCount, '/getorderscount',resource_class_kwargs={'db': db})
-api.add_resource(SignUpAdmin, '/signupadmin',resource_class_kwargs={'db': db})
-api.add_resource(SignUpAdminAngular, '/signupadminangular',resource_class_kwargs={'db': db})
-api.add_resource(LoginAdminUser, '/loginadmin',resource_class_kwargs={'db': db})
-api.add_resource(LoginAdminUserAngular, '/loginadminangular',resource_class_kwargs={'db': db})
-api.add_resource(OtpVerification, '/otpverify',resource_class_kwargs={'db': db})
-api.add_resource(EnterComment, '/comment/<string:oid>',resource_class_kwargs={'db': db})
-api.add_resource(EncryptPassword, '/encryptpassword',resource_class_kwargs={'db': db})
-
-
-
-
-
+from services import Services
+Services(app=app)
 
 if __name__ == '__main__':
     app.run(debug=True)
